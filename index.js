@@ -2,11 +2,46 @@ const express = require('express');
 const cors = require("cors");
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
+const net = require('net');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.set('trust proxy', true);
-const PORT = process.env.PORT || 3000;
+
+// Serve static files from the public folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Function to find an available port
+function findFreePort(startPort = 3000) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    
+    server.listen(startPort, () => {
+      const port = server.address().port;
+      server.close(() => {
+        resolve(port);
+      });
+    });
+    
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        // Port is in use, try the next one
+        findFreePort(startPort + 1).then(resolve).catch(reject);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+// Get port: use environment variable if set, otherwise find a free port
+async function getPort() {
+  if (process.env.PORT) {
+    return parseInt(process.env.PORT, 10);
+  }
+  return await findFreePort(3000);
+}
 
 // Load reasons from JSON
 const reasons = JSON.parse(fs.readFileSync('./reasons.json', 'utf-8'));
@@ -30,6 +65,11 @@ app.get('/no', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`No-as-a-Service is running on port ${PORT}`);
-});
+async function startServer() {
+  const PORT = await getPort();
+  app.listen(PORT, () => {
+    console.log(`No-as-a-Service is running on port ${PORT}`);
+  });
+}
+
+startServer();
