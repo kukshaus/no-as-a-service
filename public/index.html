@@ -37,6 +37,7 @@
       background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
       animation: shine 3s linear infinite;
     }
 
@@ -47,7 +48,42 @@
     .subtitle {
       font-size: 1.1rem;
       color: #a0a0a0;
-      margin-bottom: 3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .lang-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .lang-btn {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .lang-btn:hover {
+      border-color: rgba(255, 107, 107, 0.5);
+      color: #fff;
+    }
+
+    .lang-btn.active {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+      border-color: #ff6b6b;
+      color: white;
+    }
+
+    .lang-btn .flag {
+      margin-right: 6px;
     }
 
     .card {
@@ -176,6 +212,7 @@
       #reason { font-size: 1.2rem; }
       .card { padding: 30px 20px; }
       button { padding: 12px 25px; font-size: 1rem; }
+      .lang-btn { padding: 6px 12px; font-size: 0.85rem; }
     }
   </style>
 </head>
@@ -183,6 +220,21 @@
   <div class="container">
     <h1>NO.</h1>
     <p class="subtitle">The Professional Excuse Generator for Busy People</p>
+
+    <div class="lang-selector">
+      <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">
+        <span class="flag">GB</span> English
+      </button>
+      <button class="lang-btn" data-lang="de" onclick="setLanguage('de')">
+        <span class="flag">DE</span> Deutsch
+      </button>
+      <button class="lang-btn" data-lang="hu" onclick="setLanguage('hu')">
+        <span class="flag">HU</span> Magyar
+      </button>
+      <button class="lang-btn" data-lang="ru" onclick="setLanguage('ru')">
+        <span class="flag">RU</span> Pyccкий
+      </button>
+    </div>
 
     <div class="card">
       <p id="reason">Loading your excuse...</p>
@@ -194,19 +246,19 @@
           <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
           <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
         </svg>
-        Copy to Clipboard
+        <span id="copyText">Copy to Clipboard</span>
       </button>
       <button class="new-btn" onclick="getNewReason()">
         <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
           <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
         </svg>
-        Give Me Another
+        <span id="newText">Give Me Another</span>
       </button>
     </div>
 
     <div class="boss-tip">
-      <strong>Pro tip:</strong> Send this to your boss when they ask you to work overtime, attend another meeting, or do literally anything you don't want to do.
+      <strong id="tipLabel">Pro tip:</strong> <span id="tipText">Send this to your boss when they ask you to work overtime, attend another meeting, or do literally anything you don't want to do.</span>
     </div>
 
     <div class="footer">
@@ -218,18 +270,85 @@
 
   <script>
     let currentReason = '';
+    let currentLang = 'en';
+
+    const translations = {
+      en: {
+        subtitle: 'The Professional Excuse Generator for Busy People',
+        loading: 'Loading your excuse...',
+        copy: 'Copy to Clipboard',
+        newBtn: 'Give Me Another',
+        tipLabel: 'Pro tip:',
+        tipText: "Send this to your boss when they ask you to work overtime, attend another meeting, or do literally anything you don't want to do.",
+        toast: 'Copied! Now go disappoint someone.',
+        error: "I'd fetch a new excuse, but even the server is saying no right now."
+      },
+      de: {
+        subtitle: 'Der Professionelle Ausreden-Generator fur Beschaftigte',
+        loading: 'Lade deine Ausrede...',
+        copy: 'In Zwischenablage',
+        newBtn: 'Noch eine!',
+        tipLabel: 'Profi-Tipp:',
+        tipText: 'Schick das deinem Chef, wenn er fragt, ob du Uberstunden machen, an noch einem Meeting teilnehmen oder uberhaupt irgendetwas tun kannst, worauf du keine Lust hast.',
+        toast: 'Kopiert! Jetzt geh und enttausche jemanden.',
+        error: 'Ich wurde eine neue Ausrede holen, aber selbst der Server sagt gerade nein.'
+      },
+      hu: {
+        subtitle: 'A Profi Kifogasgenerator Elfoglalt Embereknek',
+        loading: 'Tolted a kifogasod...',
+        copy: 'Masolaa vagolara',
+        newBtn: 'Adj masikat!',
+        tipLabel: 'Profi tipp:',
+        tipText: 'Kuldd el ezt a fonokodnek, amikor tulorat ker, meg egy meetingre hiv, vagy barmi mast akar, amit nem akarsz csinalni.',
+        toast: 'Masolva! Most menj es csalodj valakit.',
+        error: 'Hoznek egy uj kifogast, de meg a szerver is nemet mond most.'
+      },
+      ru: {
+        subtitle: 'Профессиональный Генератор Отговорок для Занятых Людей',
+        loading: 'Загружаем вашу отговорку...',
+        copy: 'Скопировать',
+        newBtn: 'Ещё одну!',
+        tipLabel: 'Совет:',
+        tipText: 'Отправь это своему боссу, когда он попросит тебя поработать сверхурочно, прийти на очередную встречу или сделать что угодно, чего ты не хочешь.',
+        toast: 'Скопировано! Теперь иди и разочаруй кого-нибудь.',
+        error: 'Я бы загрузил новую отговорку, но даже сервер сейчас говорит нет.'
+      }
+    };
+
+    function setLanguage(lang) {
+      currentLang = lang;
+
+      // Update active button
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      // Update UI text
+      const t = translations[lang];
+      document.querySelector('.subtitle').textContent = t.subtitle;
+      document.getElementById('copyText').textContent = t.copy;
+      document.getElementById('newText').textContent = t.newBtn;
+      document.getElementById('tipLabel').textContent = t.tipLabel;
+      document.getElementById('tipText').textContent = t.tipText;
+      document.getElementById('toast').textContent = t.toast;
+
+      // Get new reason in selected language
+      getNewReason();
+    }
 
     async function getNewReason() {
       const reasonEl = document.getElementById('reason');
+      const t = translations[currentLang];
       reasonEl.style.opacity = '0.5';
+      reasonEl.textContent = t.loading;
 
       try {
-        const response = await fetch('/no');
+        const response = await fetch(`/no?lang=${currentLang}`);
         const data = await response.json();
         currentReason = data.reason;
         reasonEl.textContent = currentReason;
       } catch (error) {
-        reasonEl.textContent = "I'd fetch a new excuse, but even the server is saying no right now.";
+        reasonEl.textContent = t.error;
       }
 
       reasonEl.style.opacity = '1';
@@ -250,7 +369,7 @@
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
         e.preventDefault();
         getNewReason();
       }

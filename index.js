@@ -43,8 +43,15 @@ async function getPort() {
   return await findFreePort(3000);
 }
 
-// Load reasons from JSON
-const reasons = JSON.parse(fs.readFileSync('./reasons.json', 'utf-8'));
+// Load reasons from JSON for all languages
+const reasonsByLang = {
+  en: JSON.parse(fs.readFileSync('./reasons.json', 'utf-8')),
+  de: JSON.parse(fs.readFileSync('./reasons-de.json', 'utf-8')),
+  hu: JSON.parse(fs.readFileSync('./reasons-hu.json', 'utf-8')),
+  ru: JSON.parse(fs.readFileSync('./reasons-ru.json', 'utf-8'))
+};
+
+const supportedLanguages = Object.keys(reasonsByLang);
 
 // Rate limiter: 120 requests per minute per IP
 const limiter = rateLimit({
@@ -58,10 +65,25 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// List available languages
+app.get('/languages', (req, res) => {
+  res.json({
+    languages: supportedLanguages,
+    names: {
+      en: 'English',
+      de: 'Deutsch',
+      hu: 'Magyar',
+      ru: 'Русский'
+    }
+  });
+});
+
 // Random rejection reason endpoint
 app.get('/no', (req, res) => {
+  const lang = supportedLanguages.includes(req.query.lang) ? req.query.lang : 'en';
+  const reasons = reasonsByLang[lang];
   const reason = reasons[Math.floor(Math.random() * reasons.length)];
-  res.json({ reason });
+  res.json({ reason, lang });
 });
 
 // Start server
